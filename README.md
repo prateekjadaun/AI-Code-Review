@@ -179,12 +179,3 @@ Response:
 | Testing    | pytest (38 tests)               |
 | Dataset    | JSON + CSV, 45 labeled samples  |
 | GitHub     | Webhooks, PR Review Comments API|
-
----
-
-## Team & Timeline
-
-- **Team size:** 2 students
-- **Duration:** 30 days
-- **Difficulty:** High
-- **Domain:** NLP / Developer Tools
