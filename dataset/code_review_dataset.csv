@@ -1,0 +1,311 @@
+id,label,category,severity,message,code
+sample_0000,vulnerability,sql_injection,critical,SQL Injection: String concatenation used in SQL query. Use parameterized queries.,"def get_user(username):
+    query = ""SELECT * FROM users WHERE username = '"" + username + ""'""
+    cursor.execute(query)
+    return cursor.fetchone()"
+sample_0001,vulnerability,sql_injection,critical,SQL Injection: f-string interpolation in SQL query is dangerous.,"def search_products(name, category):
+    sql = f""SELECT * FROM products WHERE name LIKE '%{name}%' AND category='{category}'""
+    db.execute(sql)
+    return db.fetchall()"
+sample_0002,vulnerability,sql_injection,critical,SQL Injection: Dynamic table name and record_id via concatenation. Use allowlists for table names.,"def delete_record(table, record_id):
+    query = ""DELETE FROM "" + table + "" WHERE id = "" + str(record_id)
+    conn.execute(query)
+    conn.commit()"
+sample_0003,vulnerability,sql_injection,critical,SQL Injection in login: classic OR 1=1 attack vector. Use parameterized queries and password hashing.,"@app.route('/login', methods=['POST'])
+def login():
+    user = request.form['user']
+    pwd  = request.form['password']
+    res  = db.execute(""SELECT * FROM users WHERE user='"" + user + ""' AND password='"" + pwd + ""'"")
+    if res.fetchone():
+        return redirect('/dashboard')
+    return 'Invalid credentials', 401"
+sample_0004,vulnerability,sql_injection,critical,SQL Injection: Dynamic query building with string concatenation.,"def get_orders(user_id, status=None):
+    base = ""SELECT * FROM orders WHERE user_id="" + str(user_id)
+    if status:
+        base += "" AND status='"" + status + ""'""
+    return db.execute(base).fetchall()"
+sample_0005,clean,sql_injection,none,Parameterized query used correctly.,"def get_user(username):
+    query = ""SELECT * FROM users WHERE username = %s""
+    cursor.execute(query, (username,))
+    return cursor.fetchone()"
+sample_0006,clean,sql_injection,none,Safe parameterized query building.,"def get_orders(user_id, status=None):
+    params = [user_id]
+    base = ""SELECT * FROM orders WHERE user_id = %s""
+    if status:
+        base += "" AND status = %s""
+        params.append(status)
+    return db.execute(base, params).fetchall()"
+sample_0007,clean,sql_injection,none,ORM-based query is safe from SQL injection.,"from sqlalchemy.orm import Session
+
+def find_product(db: Session, product_id: int):
+    return db.query(Product).filter(Product.id == product_id).first()"
+sample_0008,vulnerability,xss,high,XSS: User input directly embedded in HTML response without escaping.,"@app.route('/greet')
+def greet():
+    name = request.args.get('name', '')
+    return f'<h1>Hello, {name}!</h1>'"
+sample_0009,vulnerability,xss,high,XSS: Unsanitized user-generated content inserted into HTML.,"def render_comment(comment_text):
+    return '<div class=""comment"">' + comment_text + '</div>'"
+sample_0010,vulnerability,xss,high,XSS: dangerouslySetInnerHTML with unsanitized user input.,"# React component
+function UserProfile({ user }) {
+  return (
+    <div dangerouslySetInnerHTML={{ __html: user.bio }} />
+  );
+}"
+sample_0011,vulnerability,xss,high,XSS: Search query reflected directly in HTML response.,"@app.route('/search')
+def search():
+    q = request.args.get('q', '')
+    results = search_db(q)
+    html = f'<p>Results for: {q}</p>'
+    for r in results:
+        html += f'<div>{r[""title""]}</div>'
+    return html"
+sample_0012,vulnerability,xss,critical,DOM-based XSS: URL parameter directly assigned to innerHTML.,document.getElementById('output').innerHTML = location.search.substring(1);
+sample_0013,clean,xss,none,Input properly escaped before HTML rendering.,"from markupsafe import escape
+
+@app.route('/greet')
+def greet():
+    name = escape(request.args.get('name', ''))
+    return f'<h1>Hello, {name}!</h1>'"
+sample_0014,clean,xss,none,textContent used instead of innerHTML — XSS safe.,"function renderMessage(text) {
+  const el = document.createElement('p');
+  el.textContent = text;  // Safe: textContent never executes HTML
+  return el;
+}"
+sample_0015,code_smell,deep_nesting,medium,Deep nesting (>4 levels): reduces readability. Refactor using early returns or helper functions.,"def process(d, x, y, z, flag, opt, mode, retries, timeout, limit, offset):
+    if flag:
+        if mode == 1:
+            for i in range(len(d)):
+                if d[i] > x:
+                    if d[i] < y:
+                        if z:
+                            result = d[i] * 2
+                            if result > limit:
+                                result = limit
+                            return result
+    return None"
+sample_0016,code_smell,god_function,high,"God function: does too many things. Split into validate_order, process_payment, update_inventory, notify_user.","def do_everything(user_id, product_id, qty, promo, addr, payment, notify):
+    # fetch user
+    user = db.query(""SELECT * FROM users WHERE id=%s"", user_id)
+    # validate product
+    product = db.query(""SELECT * FROM products WHERE id=%s"", product_id)
+    if product['stock'] < qty:
+        raise ValueError(""Out of stock"")
+    # apply promo
+    price = product['price'] * qty
+    if promo:
+        discount = db.query(""SELECT discount FROM promos WHERE code=%s"", promo)
+        price *= (1 - discount / 100)
+    # charge card
+    charge_result = payment_gateway.charge(payment, price)
+    if not charge_result['success']:
+        raise Exception(""Payment failed"")
+    # create order
+    order_id = db.execute(""INSERT INTO orders ..."", ...)
+    # update stock
+    db.execute(""UPDATE products SET stock=stock-%s WHERE id=%s"", qty, product_id)
+    # send email
+    if notify:
+        send_email(user['email'], f""Order #{order_id} confirmed!"")
+    return order_id"
+sample_0017,code_smell,magic_numbers,low,Magic numbers: Replace numeric literals with named constants for readability.,"x = 86400
+y = 3600
+z = 60
+timeout = 300
+max_items = 100
+retry_limit = 3
+
+def calc(t):
+    return t * 86400 + 3600"
+sample_0018,code_smell,empty_except,high,Bare except clause swallows all exceptions silently. Catch specific exceptions and log/re-raise.,"def get_data():
+    try:
+        result = fetch_from_api()
+        return result
+    except:
+        pass"
+sample_0019,code_smell,data_clumps,medium,Data clumps: User roles stored in separate lists. Use a User model with a roles field.,"class UserManager:
+    def __init__(self):
+        self.users = []
+        self.admins = []
+        self.banned = []
+        self.premium = []
+        self.verified = []
+
+    def add_user(self, user):
+        self.users.append(user)
+
+    def add_admin(self, user):
+        self.admins.append(user)
+        self.users.append(user)
+
+    def add_premium(self, user):
+        self.premium.append(user)
+        self.users.append(user)"
+sample_0020,code_smell,long_if_chain,medium,Long if-elif chain on type: Replace with polymorphism or a dispatch dictionary.,"def calculate_area(shape, a, b, c, d, r):
+    if shape == 'rectangle':
+        return a * b
+    elif shape == 'triangle':
+        return 0.5 * a * b
+    elif shape == 'circle':
+        return 3.14159 * r * r
+    elif shape == 'trapezoid':
+        return 0.5 * (a + b) * c
+    elif shape == 'ellipse':
+        return 3.14159 * a * b
+    else:
+        raise ValueError(f""Unknown shape: {shape}"")"
+sample_0021,code_smell,poor_naming,medium,Cryptic variable and function names: Use descriptive names that express intent.,"def a(x):
+    b = x * 2
+    c = b + 10
+    d = c / 3
+    return d
+
+def p(u, s):
+    r = a(s)
+    u.bal += r
+    return u"
+sample_0022,code_smell,deep_nesting,low,Deeply nested conditionals for validation. Use early returns or regex.,"def is_valid_email(email):
+    if '@' in email:
+        parts = email.split('@')
+        if len(parts) == 2:
+            if parts[0] != '':
+                if parts[1] != '':
+                    if '.' in parts[1]:
+                        return True
+    return False"
+sample_0023,clean,code_smell,none,Well-named function with type hints and validation.,"def calculate_discount(price: float, discount_pct: float) -> float:
+    """"""Apply a percentage discount to a price.""""""
+    if not 0 <= discount_pct <= 100:
+        raise ValueError(f""Discount must be 0-100, got {discount_pct}"")
+    return price * (1 - discount_pct / 100)"
+sample_0024,clean,code_smell,none,Specific exception handling with proper logging.,"import logging
+logger = logging.getLogger(__name__)
+
+def fetch_user(user_id: int):
+    try:
+        return db.get(User, user_id)
+    except DatabaseError as e:
+        logger.exception(""Failed to fetch user %s"", user_id)
+        raise"
+sample_0025,vulnerability,weak_crypto,critical,"MD5 is cryptographically broken. Use bcrypt, argon2, or scrypt for passwords.","import hashlib
+
+def hash_password(password):
+    return hashlib.md5(password.encode()).hexdigest()"
+sample_0026,vulnerability,hardcoded_secrets,critical,Hardcoded credentials in source code. Use environment variables or a secrets manager.,"SECRET_KEY = ""mysecretkey123""
+DB_PASSWORD = ""admin123""
+API_KEY = ""sk-abc123def456""
+JWT_SECRET = ""jwt_secret_do_not_share""
+
+app = Flask(__name__)
+app.secret_key = SECRET_KEY"
+sample_0027,vulnerability,command_injection,critical,Command injection: shell=True with user input allows arbitrary command execution.,"import subprocess
+
+def run_command(user_input):
+    result = subprocess.run(user_input, shell=True, capture_output=True)
+    return result.stdout.decode()"
+sample_0028,vulnerability,insecure_deserialization,critical,Insecure deserialization: pickle.loads on user data allows arbitrary code execution.,"import pickle
+
+@app.route('/load', methods=['POST'])
+def load_data():
+    data = request.get_data()
+    obj = pickle.loads(data)
+    return jsonify(obj)"
+sample_0029,vulnerability,path_traversal,critical,Path traversal: ../../../etc/passwd attack possible. Use os.path.realpath and validate.,"@app.route('/file')
+def serve_file():
+    filename = request.args.get('name')
+    path = '/var/www/files/' + filename
+    with open(path) as f:
+        return f.read()"
+sample_0030,vulnerability,broken_auth,critical,JWT signature verification disabled: allows token forgery.,"def verify_token(token):
+    import jwt
+    payload = jwt.decode(token, options={""verify_signature"": False})
+    return payload"
+sample_0031,vulnerability,weak_random,high,Weak random for security token: random.randint is predictable. Use secrets module.,"@app.route('/reset', methods=['POST'])
+def reset_password():
+    email = request.form['email']
+    token = str(random.randint(100000, 999999))
+    send_reset_email(email, token)
+    db.set(f'reset:{email}', token, ex=3600)
+    return 'Reset email sent'"
+sample_0032,clean,security,none,Strong password hashing with bcrypt.,"import bcrypt
+
+def hash_password(password: str) -> bytes:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))
+
+def verify_password(password: str, hashed: bytes) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed)"
+sample_0033,clean,security,none,Secrets from env vars and cryptographically secure token generation.,"import os
+import secrets
+
+SECRET_KEY = os.environ['SECRET_KEY']
+DB_PASSWORD = os.environ['DB_PASSWORD']
+
+def generate_token():
+    return secrets.token_urlsafe(32)"
+sample_0034,performance,n_plus_1_query,high,N+1 query: fetching each user separately in a loop. Use a single IN query.,"def get_user_emails(user_ids):
+    emails = []
+    for uid in user_ids:
+        user = db.query(""SELECT email FROM users WHERE id=%s"", uid)
+        emails.append(user['email'])
+    return emails"
+sample_0035,performance,inefficient_algorithm,high,O(n³) algorithm for duplicate detection. Use a Counter or set for O(n).,"def find_duplicates(items):
+    duplicates = []
+    for i in range(len(items)):
+        for j in range(len(items)):
+            if i != j and items[i] == items[j]:
+                if items[i] not in duplicates:
+                    duplicates.append(items[i])
+    return duplicates"
+sample_0036,performance,missing_pagination,high,Loading entire table into memory: add LIMIT/OFFSET or cursor-based pagination.,"def load_all_users():
+    users = db.execute(""SELECT * FROM users"").fetchall()
+    return users  # returns millions of rows"
+sample_0037,performance,unnecessary_list,low,List comprehension creates an unnecessary list: use a generator expression.,"def sum_squares(n):
+    return sum([x**2 for x in range(n)])"
+sample_0038,performance,missing_cache,medium,Expensive computation on every request: add caching with TTL.,"import time
+
+@app.route('/heavy')
+def heavy_computation():
+    time.sleep(0)  # simulates expensive op every request
+    result = expensive_function()
+    return jsonify(result)"
+sample_0039,clean,performance,none,O(n) duplicate detection using Counter.,"from collections import Counter
+
+def find_duplicates(items: list) -> list:
+    return [item for item, count in Counter(items).items() if count > 1]"
+sample_0040,clean,performance,none,Batch query avoids N+1 problem.,"def get_user_emails(user_ids: list[int]) -> list[str]:
+    if not user_ids:
+        return []
+    rows = db.query(
+        ""SELECT email FROM users WHERE id = ANY(%s)"", (user_ids,)
+    )
+    return [row['email'] for row in rows]"
+sample_0041,style,pep8_violation,low,"PEP 8 violations: extra spaces, missing spaces around operators, inconsistent formatting.","def   calculateTotalPrice( items,tax_rate,discount=0 ):
+    total=0
+    for i in items:
+        total=total+i['price']
+    total=total*(1+tax_rate)
+    total=total*(1-discount)
+    return(total)"
+sample_0042,style,long_line,low,Line exceeds 79 characters (PEP 8). Break long signatures.,"def process_user_data(user_data_dict_from_database_with_all_fields, enable_email_notification_flag=True, maximum_retry_count_for_failed_operations=3):
+    pass"
+sample_0043,style,naming_convention,low,Class name should be CamelCase; attributes should use snake_case; add docstrings.,"def foo(x):
+    y = x + 1
+    z = y * 2
+    return z
+
+def bar(): return 42
+
+class myClass:
+    def __init__(self):
+        self.Value=10"
+sample_0044,clean,style,none,Well-formatted function with type hints and docstring.,"def calculate_total(items: list[dict], tax_rate: float = 0.1) -> float:
+    """"""Calculate total price including tax.
+
+    Args:
+        items: List of items with 'price' key.
+        tax_rate: Tax rate as a decimal (default 10%).
+
+    Returns:
+        Total price after tax.
+    """"""
+    subtotal = sum(item['price'] for item in items)
+    return subtotal * (1 + tax_rate)"

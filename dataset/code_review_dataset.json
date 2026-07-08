@@ -1,0 +1,407 @@
+[
+  {
+    "code": "def get_user(username):\n    query = \"SELECT * FROM users WHERE username = '\" + username + \"'\"\n    cursor.execute(query)\n    return cursor.fetchone()",
+    "label": "vulnerability",
+    "category": "sql_injection",
+    "severity": "critical",
+    "message": "SQL Injection: String concatenation used in SQL query. Use parameterized queries.",
+    "fix": "def get_user(username):\n    query = \"SELECT * FROM users WHERE username = %s\"\n    cursor.execute(query, (username,))\n    return cursor.fetchone()",
+    "id": "sample_0000"
+  },
+  {
+    "code": "def search_products(name, category):\n    sql = f\"SELECT * FROM products WHERE name LIKE '%{name}%' AND category='{category}'\"\n    db.execute(sql)\n    return db.fetchall()",
+    "label": "vulnerability",
+    "category": "sql_injection",
+    "severity": "critical",
+    "message": "SQL Injection: f-string interpolation in SQL query is dangerous.",
+    "fix": "def search_products(name, category):\n    sql = \"SELECT * FROM products WHERE name LIKE %s AND category=%s\"\n    db.execute(sql, (f'%{name}%', category))\n    return db.fetchall()",
+    "id": "sample_0001"
+  },
+  {
+    "code": "def delete_record(table, record_id):\n    query = \"DELETE FROM \" + table + \" WHERE id = \" + str(record_id)\n    conn.execute(query)\n    conn.commit()",
+    "label": "vulnerability",
+    "category": "sql_injection",
+    "severity": "critical",
+    "message": "SQL Injection: Dynamic table name and record_id via concatenation. Use allowlists for table names.",
+    "fix": "ALLOWED_TABLES = {'users', 'products', 'orders'}\n\ndef delete_record(table, record_id):\n    if table not in ALLOWED_TABLES:\n        raise ValueError(f\"Invalid table: {table}\")\n    query = f\"DELETE FROM {table} WHERE id = %s\"\n    conn.execute(query, (record_id,))\n    conn.commit()",
+    "id": "sample_0002"
+  },
+  {
+    "code": "@app.route('/login', methods=['POST'])\ndef login():\n    user = request.form['user']\n    pwd  = request.form['password']\n    res  = db.execute(\"SELECT * FROM users WHERE user='\" + user + \"' AND password='\" + pwd + \"'\")\n    if res.fetchone():\n        return redirect('/dashboard')\n    return 'Invalid credentials', 401",
+    "label": "vulnerability",
+    "category": "sql_injection",
+    "severity": "critical",
+    "message": "SQL Injection in login: classic OR 1=1 attack vector. Use parameterized queries and password hashing.",
+    "fix": "@app.route('/login', methods=['POST'])\ndef login():\n    user = request.form['user']\n    pwd  = request.form['password']\n    res  = db.execute(\"SELECT * FROM users WHERE user=%s\", (user,))\n    row  = res.fetchone()\n    if row and bcrypt.checkpw(pwd.encode(), row['password_hash']):\n        return redirect('/dashboard')\n    return 'Invalid credentials', 401",
+    "id": "sample_0003"
+  },
+  {
+    "code": "def get_orders(user_id, status=None):\n    base = \"SELECT * FROM orders WHERE user_id=\" + str(user_id)\n    if status:\n        base += \" AND status='\" + status + \"'\"\n    return db.execute(base).fetchall()",
+    "label": "vulnerability",
+    "category": "sql_injection",
+    "severity": "critical",
+    "message": "SQL Injection: Dynamic query building with string concatenation.",
+    "fix": "def get_orders(user_id, status=None):\n    params = [user_id]\n    base = \"SELECT * FROM orders WHERE user_id=%s\"\n    if status:\n        base += \" AND status=%s\"\n        params.append(status)\n    return db.execute(base, params).fetchall()",
+    "id": "sample_0004"
+  },
+  {
+    "code": "def get_user(username):\n    query = \"SELECT * FROM users WHERE username = %s\"\n    cursor.execute(query, (username,))\n    return cursor.fetchone()",
+    "label": "clean",
+    "category": "sql_injection",
+    "severity": "none",
+    "message": "Parameterized query used correctly.",
+    "fix": "",
+    "id": "sample_0005"
+  },
+  {
+    "code": "def get_orders(user_id, status=None):\n    params = [user_id]\n    base = \"SELECT * FROM orders WHERE user_id = %s\"\n    if status:\n        base += \" AND status = %s\"\n        params.append(status)\n    return db.execute(base, params).fetchall()",
+    "label": "clean",
+    "category": "sql_injection",
+    "severity": "none",
+    "message": "Safe parameterized query building.",
+    "fix": "",
+    "id": "sample_0006"
+  },
+  {
+    "code": "from sqlalchemy.orm import Session\n\ndef find_product(db: Session, product_id: int):\n    return db.query(Product).filter(Product.id == product_id).first()",
+    "label": "clean",
+    "category": "sql_injection",
+    "severity": "none",
+    "message": "ORM-based query is safe from SQL injection.",
+    "fix": "",
+    "id": "sample_0007"
+  },
+  {
+    "code": "@app.route('/greet')\ndef greet():\n    name = request.args.get('name', '')\n    return f'<h1>Hello, {name}!</h1>'",
+    "label": "vulnerability",
+    "category": "xss",
+    "severity": "high",
+    "message": "XSS: User input directly embedded in HTML response without escaping.",
+    "fix": "from markupsafe import escape\n\n@app.route('/greet')\ndef greet():\n    name = escape(request.args.get('name', ''))\n    return f'<h1>Hello, {name}!</h1>'",
+    "id": "sample_0008"
+  },
+  {
+    "code": "def render_comment(comment_text):\n    return '<div class=\"comment\">' + comment_text + '</div>'",
+    "label": "vulnerability",
+    "category": "xss",
+    "severity": "high",
+    "message": "XSS: Unsanitized user-generated content inserted into HTML.",
+    "fix": "from markupsafe import escape\n\ndef render_comment(comment_text):\n    safe = escape(comment_text)\n    return f'<div class=\"comment\">{safe}</div>'",
+    "id": "sample_0009"
+  },
+  {
+    "code": "# React component\nfunction UserProfile({ user }) {\n  return (\n    <div dangerouslySetInnerHTML={{ __html: user.bio }} />\n  );\n}",
+    "label": "vulnerability",
+    "category": "xss",
+    "severity": "high",
+    "message": "XSS: dangerouslySetInnerHTML with unsanitized user input.",
+    "fix": "import DOMPurify from 'dompurify';\n\nfunction UserProfile({ user }) {\n  const cleanBio = DOMPurify.sanitize(user.bio);\n  return (\n    <div dangerouslySetInnerHTML={{ __html: cleanBio }} />\n  );\n}",
+    "id": "sample_0010"
+  },
+  {
+    "code": "@app.route('/search')\ndef search():\n    q = request.args.get('q', '')\n    results = search_db(q)\n    html = f'<p>Results for: {q}</p>'\n    for r in results:\n        html += f'<div>{r[\"title\"]}</div>'\n    return html",
+    "label": "vulnerability",
+    "category": "xss",
+    "severity": "high",
+    "message": "XSS: Search query reflected directly in HTML response.",
+    "fix": "from markupsafe import escape\nfrom flask import render_template_string\n\n@app.route('/search')\ndef search():\n    q = request.args.get('q', '')\n    results = search_db(q)\n    return render_template('search.html', query=q, results=results)",
+    "id": "sample_0011"
+  },
+  {
+    "code": "document.getElementById('output').innerHTML = location.search.substring(1);",
+    "label": "vulnerability",
+    "category": "xss",
+    "severity": "critical",
+    "message": "DOM-based XSS: URL parameter directly assigned to innerHTML.",
+    "fix": "const params = new URLSearchParams(location.search);\nconst value = params.get('q') || '';\ndocument.getElementById('output').textContent = value;",
+    "id": "sample_0012"
+  },
+  {
+    "code": "from markupsafe import escape\n\n@app.route('/greet')\ndef greet():\n    name = escape(request.args.get('name', ''))\n    return f'<h1>Hello, {name}!</h1>'",
+    "label": "clean",
+    "category": "xss",
+    "severity": "none",
+    "message": "Input properly escaped before HTML rendering.",
+    "fix": "",
+    "id": "sample_0013"
+  },
+  {
+    "code": "function renderMessage(text) {\n  const el = document.createElement('p');\n  el.textContent = text;  // Safe: textContent never executes HTML\n  return el;\n}",
+    "label": "clean",
+    "category": "xss",
+    "severity": "none",
+    "message": "textContent used instead of innerHTML \u2014 XSS safe.",
+    "fix": "",
+    "id": "sample_0014"
+  },
+  {
+    "code": "def process(d, x, y, z, flag, opt, mode, retries, timeout, limit, offset):\n    if flag:\n        if mode == 1:\n            for i in range(len(d)):\n                if d[i] > x:\n                    if d[i] < y:\n                        if z:\n                            result = d[i] * 2\n                            if result > limit:\n                                result = limit\n                            return result\n    return None",
+    "label": "code_smell",
+    "category": "deep_nesting",
+    "severity": "medium",
+    "message": "Deep nesting (>4 levels): reduces readability. Refactor using early returns or helper functions.",
+    "fix": "def process(d, x, y, z, flag, opt, mode, retries, timeout, limit, offset):\n    if not flag or mode != 1 or not z:\n        return None\n    for value in d:\n        if x < value < y:\n            return min(value * 2, limit)\n    return None",
+    "id": "sample_0015"
+  },
+  {
+    "code": "def do_everything(user_id, product_id, qty, promo, addr, payment, notify):\n    # fetch user\n    user = db.query(\"SELECT * FROM users WHERE id=%s\", user_id)\n    # validate product\n    product = db.query(\"SELECT * FROM products WHERE id=%s\", product_id)\n    if product['stock'] < qty:\n        raise ValueError(\"Out of stock\")\n    # apply promo\n    price = product['price'] * qty\n    if promo:\n        discount = db.query(\"SELECT discount FROM promos WHERE code=%s\", promo)\n        price *= (1 - discount / 100)\n    # charge card\n    charge_result = payment_gateway.charge(payment, price)\n    if not charge_result['success']:\n        raise Exception(\"Payment failed\")\n    # create order\n    order_id = db.execute(\"INSERT INTO orders ...\", ...)\n    # update stock\n    db.execute(\"UPDATE products SET stock=stock-%s WHERE id=%s\", qty, product_id)\n    # send email\n    if notify:\n        send_email(user['email'], f\"Order #{order_id} confirmed!\")\n    return order_id",
+    "label": "code_smell",
+    "category": "god_function",
+    "severity": "high",
+    "message": "God function: does too many things. Split into validate_order, process_payment, update_inventory, notify_user.",
+    "fix": "Split into smaller single-responsibility functions.",
+    "id": "sample_0016"
+  },
+  {
+    "code": "x = 86400\ny = 3600\nz = 60\ntimeout = 300\nmax_items = 100\nretry_limit = 3\n\ndef calc(t):\n    return t * 86400 + 3600",
+    "label": "code_smell",
+    "category": "magic_numbers",
+    "severity": "low",
+    "message": "Magic numbers: Replace numeric literals with named constants for readability.",
+    "fix": "SECONDS_PER_DAY = 86400\nSECONDS_PER_HOUR = 3600\nSECONDS_PER_MINUTE = 60\nREQUEST_TIMEOUT = 300\nMAX_ITEMS_PER_PAGE = 100\nMAX_RETRY_ATTEMPTS = 3\n\ndef calc(t):\n    return t * SECONDS_PER_DAY + SECONDS_PER_HOUR",
+    "id": "sample_0017"
+  },
+  {
+    "code": "def get_data():\n    try:\n        result = fetch_from_api()\n        return result\n    except:\n        pass",
+    "label": "code_smell",
+    "category": "empty_except",
+    "severity": "high",
+    "message": "Bare except clause swallows all exceptions silently. Catch specific exceptions and log/re-raise.",
+    "fix": "import logging\n\ndef get_data():\n    try:\n        result = fetch_from_api()\n        return result\n    except requests.Timeout as e:\n        logging.error(f\"API timeout: {e}\")\n        raise\n    except requests.RequestException as e:\n        logging.error(f\"API error: {e}\")\n        return None",
+    "id": "sample_0018"
+  },
+  {
+    "code": "class UserManager:\n    def __init__(self):\n        self.users = []\n        self.admins = []\n        self.banned = []\n        self.premium = []\n        self.verified = []\n\n    def add_user(self, user):\n        self.users.append(user)\n\n    def add_admin(self, user):\n        self.admins.append(user)\n        self.users.append(user)\n\n    def add_premium(self, user):\n        self.premium.append(user)\n        self.users.append(user)",
+    "label": "code_smell",
+    "category": "data_clumps",
+    "severity": "medium",
+    "message": "Data clumps: User roles stored in separate lists. Use a User model with a roles field.",
+    "fix": "from enum import Enum\nfrom dataclasses import dataclass, field\n\nclass Role(Enum):\n    USER = 'user'\n    ADMIN = 'admin'\n    PREMIUM = 'premium'\n    VERIFIED = 'verified'\n\n@dataclass\nclass User:\n    id: int\n    name: str\n    roles: set = field(default_factory=set)\n\nclass UserManager:\n    def __init__(self):\n        self.users: dict[int, User] = {}\n\n    def add_user(self, user: User):\n        self.users[user.id] = user\n\n    def grant_role(self, user_id: int, role: Role):\n        self.users[user_id].roles.add(role)",
+    "id": "sample_0019"
+  },
+  {
+    "code": "def calculate_area(shape, a, b, c, d, r):\n    if shape == 'rectangle':\n        return a * b\n    elif shape == 'triangle':\n        return 0.5 * a * b\n    elif shape == 'circle':\n        return 3.14159 * r * r\n    elif shape == 'trapezoid':\n        return 0.5 * (a + b) * c\n    elif shape == 'ellipse':\n        return 3.14159 * a * b\n    else:\n        raise ValueError(f\"Unknown shape: {shape}\")",
+    "label": "code_smell",
+    "category": "long_if_chain",
+    "severity": "medium",
+    "message": "Long if-elif chain on type: Replace with polymorphism or a dispatch dictionary.",
+    "fix": "import math\nfrom abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self) -> float: ...\n\nclass Rectangle(Shape):\n    def __init__(self, width, height): self.w, self.h = width, height\n    def area(self): return self.w * self.h\n\nclass Circle(Shape):\n    def __init__(self, radius): self.r = radius\n    def area(self): return math.pi * self.r ** 2",
+    "id": "sample_0020"
+  },
+  {
+    "code": "def a(x):\n    b = x * 2\n    c = b + 10\n    d = c / 3\n    return d\n\ndef p(u, s):\n    r = a(s)\n    u.bal += r\n    return u",
+    "label": "code_smell",
+    "category": "poor_naming",
+    "severity": "medium",
+    "message": "Cryptic variable and function names: Use descriptive names that express intent.",
+    "fix": "def calculate_bonus(sales_amount):\n    doubled_sales = sales_amount * 2\n    adjusted_sales = doubled_sales + 10\n    bonus = adjusted_sales / 3\n    return bonus\n\ndef apply_bonus_to_user(user, sales_amount):\n    bonus = calculate_bonus(sales_amount)\n    user.balance += bonus\n    return user",
+    "id": "sample_0021"
+  },
+  {
+    "code": "def is_valid_email(email):\n    if '@' in email:\n        parts = email.split('@')\n        if len(parts) == 2:\n            if parts[0] != '':\n                if parts[1] != '':\n                    if '.' in parts[1]:\n                        return True\n    return False",
+    "label": "code_smell",
+    "category": "deep_nesting",
+    "severity": "low",
+    "message": "Deeply nested conditionals for validation. Use early returns or regex.",
+    "fix": "import re\n\ndef is_valid_email(email: str) -> bool:\n    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'\n    return bool(re.match(pattern, email))",
+    "id": "sample_0022"
+  },
+  {
+    "code": "def calculate_discount(price: float, discount_pct: float) -> float:\n    \"\"\"Apply a percentage discount to a price.\"\"\"\n    if not 0 <= discount_pct <= 100:\n        raise ValueError(f\"Discount must be 0-100, got {discount_pct}\")\n    return price * (1 - discount_pct / 100)",
+    "label": "clean",
+    "category": "code_smell",
+    "severity": "none",
+    "message": "Well-named function with type hints and validation.",
+    "fix": "",
+    "id": "sample_0023"
+  },
+  {
+    "code": "import logging\nlogger = logging.getLogger(__name__)\n\ndef fetch_user(user_id: int):\n    try:\n        return db.get(User, user_id)\n    except DatabaseError as e:\n        logger.exception(\"Failed to fetch user %s\", user_id)\n        raise",
+    "label": "clean",
+    "category": "code_smell",
+    "severity": "none",
+    "message": "Specific exception handling with proper logging.",
+    "fix": "",
+    "id": "sample_0024"
+  },
+  {
+    "code": "import hashlib\n\ndef hash_password(password):\n    return hashlib.md5(password.encode()).hexdigest()",
+    "label": "vulnerability",
+    "category": "weak_crypto",
+    "severity": "critical",
+    "message": "MD5 is cryptographically broken. Use bcrypt, argon2, or scrypt for passwords.",
+    "fix": "import bcrypt\n\ndef hash_password(password: str) -> bytes:\n    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt(rounds=12))\n\ndef verify_password(password: str, hashed: bytes) -> bool:\n    return bcrypt.checkpw(password.encode('utf-8'), hashed)",
+    "id": "sample_0025"
+  },
+  {
+    "code": "SECRET_KEY = \"mysecretkey123\"\nDB_PASSWORD = \"admin123\"\nAPI_KEY = \"sk-abc123def456\"\nJWT_SECRET = \"jwt_secret_do_not_share\"\n\napp = Flask(__name__)\napp.secret_key = SECRET_KEY",
+    "label": "vulnerability",
+    "category": "hardcoded_secrets",
+    "severity": "critical",
+    "message": "Hardcoded credentials in source code. Use environment variables or a secrets manager.",
+    "fix": "import os\nfrom dotenv import load_dotenv\n\nload_dotenv()\n\nSECRET_KEY = os.environ['SECRET_KEY']\nDB_PASSWORD = os.environ['DB_PASSWORD']\nAPI_KEY     = os.environ['API_KEY']\nJWT_SECRET  = os.environ['JWT_SECRET']\n\napp = Flask(__name__)\napp.secret_key = SECRET_KEY",
+    "id": "sample_0026"
+  },
+  {
+    "code": "import subprocess\n\ndef run_command(user_input):\n    result = subprocess.run(user_input, shell=True, capture_output=True)\n    return result.stdout.decode()",
+    "label": "vulnerability",
+    "category": "command_injection",
+    "severity": "critical",
+    "message": "Command injection: shell=True with user input allows arbitrary command execution.",
+    "fix": "import subprocess\nimport shlex\n\nALLOWED_COMMANDS = {'ls', 'echo', 'date'}\n\ndef run_command(command: str, args: list[str]) -> str:\n    if command not in ALLOWED_COMMANDS:\n        raise ValueError(f\"Command not allowed: {command}\")\n    result = subprocess.run([command] + args, shell=False, capture_output=True, timeout=10)\n    return result.stdout.decode()",
+    "id": "sample_0027"
+  },
+  {
+    "code": "import pickle\n\n@app.route('/load', methods=['POST'])\ndef load_data():\n    data = request.get_data()\n    obj = pickle.loads(data)\n    return jsonify(obj)",
+    "label": "vulnerability",
+    "category": "insecure_deserialization",
+    "severity": "critical",
+    "message": "Insecure deserialization: pickle.loads on user data allows arbitrary code execution.",
+    "fix": "import json\n\n@app.route('/load', methods=['POST'])\ndef load_data():\n    data = request.get_json(force=True)\n    # Validate schema strictly\n    validated = validate_schema(data)\n    return jsonify(validated)",
+    "id": "sample_0028"
+  },
+  {
+    "code": "@app.route('/file')\ndef serve_file():\n    filename = request.args.get('name')\n    path = '/var/www/files/' + filename\n    with open(path) as f:\n        return f.read()",
+    "label": "vulnerability",
+    "category": "path_traversal",
+    "severity": "critical",
+    "message": "Path traversal: ../../../etc/passwd attack possible. Use os.path.realpath and validate.",
+    "fix": "import os\nfrom flask import abort\n\nSAFE_DIR = '/var/www/files'\n\n@app.route('/file')\ndef serve_file():\n    filename = request.args.get('name', '')\n    # Resolve and validate path stays within safe directory\n    safe_path = os.path.realpath(os.path.join(SAFE_DIR, filename))\n    if not safe_path.startswith(SAFE_DIR + os.sep):\n        abort(403)\n    with open(safe_path) as f:\n        return f.read()",
+    "id": "sample_0029"
+  },
+  {
+    "code": "def verify_token(token):\n    import jwt\n    payload = jwt.decode(token, options={\"verify_signature\": False})\n    return payload",
+    "label": "vulnerability",
+    "category": "broken_auth",
+    "severity": "critical",
+    "message": "JWT signature verification disabled: allows token forgery.",
+    "fix": "def verify_token(token: str) -> dict:\n    import jwt\n    payload = jwt.decode(\n        token,\n        key=os.environ['JWT_SECRET'],\n        algorithms=['HS256'],\n        options={\"require\": [\"exp\", \"iat\", \"sub\"]}\n    )\n    return payload",
+    "id": "sample_0030"
+  },
+  {
+    "code": "@app.route('/reset', methods=['POST'])\ndef reset_password():\n    email = request.form['email']\n    token = str(random.randint(100000, 999999))\n    send_reset_email(email, token)\n    db.set(f'reset:{email}', token, ex=3600)\n    return 'Reset email sent'",
+    "label": "vulnerability",
+    "category": "weak_random",
+    "severity": "high",
+    "message": "Weak random for security token: random.randint is predictable. Use secrets module.",
+    "fix": "import secrets\n\n@app.route('/reset', methods=['POST'])\ndef reset_password():\n    email = request.form['email']\n    token = secrets.token_urlsafe(32)\n    send_reset_email(email, token)\n    db.set(f'reset:{email}', token, ex=3600)\n    return 'Reset email sent'",
+    "id": "sample_0031"
+  },
+  {
+    "code": "import bcrypt\n\ndef hash_password(password: str) -> bytes:\n    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12))\n\ndef verify_password(password: str, hashed: bytes) -> bool:\n    return bcrypt.checkpw(password.encode(), hashed)",
+    "label": "clean",
+    "category": "security",
+    "severity": "none",
+    "message": "Strong password hashing with bcrypt.",
+    "fix": "",
+    "id": "sample_0032"
+  },
+  {
+    "code": "import os\nimport secrets\n\nSECRET_KEY = os.environ['SECRET_KEY']\nDB_PASSWORD = os.environ['DB_PASSWORD']\n\ndef generate_token():\n    return secrets.token_urlsafe(32)",
+    "label": "clean",
+    "category": "security",
+    "severity": "none",
+    "message": "Secrets from env vars and cryptographically secure token generation.",
+    "fix": "",
+    "id": "sample_0033"
+  },
+  {
+    "code": "def get_user_emails(user_ids):\n    emails = []\n    for uid in user_ids:\n        user = db.query(\"SELECT email FROM users WHERE id=%s\", uid)\n        emails.append(user['email'])\n    return emails",
+    "label": "performance",
+    "category": "n_plus_1_query",
+    "severity": "high",
+    "message": "N+1 query: fetching each user separately in a loop. Use a single IN query.",
+    "fix": "def get_user_emails(user_ids: list[int]) -> list[str]:\n    if not user_ids:\n        return []\n    placeholders = ','.join(['%s'] * len(user_ids))\n    rows = db.query(f\"SELECT email FROM users WHERE id IN ({placeholders})\", user_ids)\n    return [row['email'] for row in rows]",
+    "id": "sample_0034"
+  },
+  {
+    "code": "def find_duplicates(items):\n    duplicates = []\n    for i in range(len(items)):\n        for j in range(len(items)):\n            if i != j and items[i] == items[j]:\n                if items[i] not in duplicates:\n                    duplicates.append(items[i])\n    return duplicates",
+    "label": "performance",
+    "category": "inefficient_algorithm",
+    "severity": "high",
+    "message": "O(n\u00b3) algorithm for duplicate detection. Use a Counter or set for O(n).",
+    "fix": "from collections import Counter\n\ndef find_duplicates(items: list) -> list:\n    return [item for item, count in Counter(items).items() if count > 1]",
+    "id": "sample_0035"
+  },
+  {
+    "code": "def load_all_users():\n    users = db.execute(\"SELECT * FROM users\").fetchall()\n    return users  # returns millions of rows",
+    "label": "performance",
+    "category": "missing_pagination",
+    "severity": "high",
+    "message": "Loading entire table into memory: add LIMIT/OFFSET or cursor-based pagination.",
+    "fix": "def load_users(page: int = 1, page_size: int = 100):\n    offset = (page - 1) * page_size\n    return db.execute(\n        \"SELECT * FROM users ORDER BY id LIMIT %s OFFSET %s\",\n        (page_size, offset)\n    ).fetchall()",
+    "id": "sample_0036"
+  },
+  {
+    "code": "def sum_squares(n):\n    return sum([x**2 for x in range(n)])",
+    "label": "performance",
+    "category": "unnecessary_list",
+    "severity": "low",
+    "message": "List comprehension creates an unnecessary list: use a generator expression.",
+    "fix": "def sum_squares(n: int) -> int:\n    return sum(x**2 for x in range(n))",
+    "id": "sample_0037"
+  },
+  {
+    "code": "import time\n\n@app.route('/heavy')\ndef heavy_computation():\n    time.sleep(0)  # simulates expensive op every request\n    result = expensive_function()\n    return jsonify(result)",
+    "label": "performance",
+    "category": "missing_cache",
+    "severity": "medium",
+    "message": "Expensive computation on every request: add caching with TTL.",
+    "fix": "from functools import lru_cache\nfrom flask_caching import Cache\n\ncache = Cache(config={'CACHE_TYPE': 'RedisCache', 'CACHE_DEFAULT_TIMEOUT': 300})\n\n@app.route('/heavy')\n@cache.cached(timeout=300)\ndef heavy_computation():\n    result = expensive_function()\n    return jsonify(result)",
+    "id": "sample_0038"
+  },
+  {
+    "code": "from collections import Counter\n\ndef find_duplicates(items: list) -> list:\n    return [item for item, count in Counter(items).items() if count > 1]",
+    "label": "clean",
+    "category": "performance",
+    "severity": "none",
+    "message": "O(n) duplicate detection using Counter.",
+    "fix": "",
+    "id": "sample_0039"
+  },
+  {
+    "code": "def get_user_emails(user_ids: list[int]) -> list[str]:\n    if not user_ids:\n        return []\n    rows = db.query(\n        \"SELECT email FROM users WHERE id = ANY(%s)\", (user_ids,)\n    )\n    return [row['email'] for row in rows]",
+    "label": "clean",
+    "category": "performance",
+    "severity": "none",
+    "message": "Batch query avoids N+1 problem.",
+    "fix": "",
+    "id": "sample_0040"
+  },
+  {
+    "code": "def   calculateTotalPrice( items,tax_rate,discount=0 ):\n    total=0\n    for i in items:\n        total=total+i['price']\n    total=total*(1+tax_rate)\n    total=total*(1-discount)\n    return(total)",
+    "label": "style",
+    "category": "pep8_violation",
+    "severity": "low",
+    "message": "PEP 8 violations: extra spaces, missing spaces around operators, inconsistent formatting.",
+    "fix": "def calculate_total_price(items, tax_rate, discount=0):\n    total = sum(item['price'] for item in items)\n    total *= (1 + tax_rate)\n    total *= (1 - discount)\n    return total",
+    "id": "sample_0041"
+  },
+  {
+    "code": "def process_user_data(user_data_dict_from_database_with_all_fields, enable_email_notification_flag=True, maximum_retry_count_for_failed_operations=3):\n    pass",
+    "label": "style",
+    "category": "long_line",
+    "severity": "low",
+    "message": "Line exceeds 79 characters (PEP 8). Break long signatures.",
+    "fix": "def process_user_data(\n    user_data: dict,\n    enable_notifications: bool = True,\n    max_retries: int = 3,\n) -> None:\n    pass",
+    "id": "sample_0042"
+  },
+  {
+    "code": "def foo(x):\n    y = x + 1\n    z = y * 2\n    return z\n\ndef bar(): return 42\n\nclass myClass:\n    def __init__(self):\n        self.Value=10",
+    "label": "style",
+    "category": "naming_convention",
+    "severity": "low",
+    "message": "Class name should be CamelCase; attributes should use snake_case; add docstrings.",
+    "fix": "def foo(x: int) -> int:\n    \"\"\"Double the successor of x.\"\"\"\n    return (x + 1) * 2\n\ndef bar() -> int:\n    \"\"\"Return the answer.\"\"\"\n    return 42\n\nclass MyClass:\n    \"\"\"Represent a thing with a value.\"\"\"\n    def __init__(self):\n        self.value = 10",
+    "id": "sample_0043"
+  },
+  {
+    "code": "def calculate_total(items: list[dict], tax_rate: float = 0.1) -> float:\n    \"\"\"Calculate total price including tax.\n\n    Args:\n        items: List of items with 'price' key.\n        tax_rate: Tax rate as a decimal (default 10%).\n\n    Returns:\n        Total price after tax.\n    \"\"\"\n    subtotal = sum(item['price'] for item in items)\n    return subtotal * (1 + tax_rate)",
+    "label": "clean",
+    "category": "style",
+    "severity": "none",
+    "message": "Well-formatted function with type hints and docstring.",
+    "fix": "",
+    "id": "sample_0044"
+  }
+]
